@@ -1,0 +1,12 @@
+---
+repositories:
+  agimus-demos:
+    type: git
+    url: https://github.com/xmatousm/agimus-demos.git
+    version: humble-kuka
+
+  # not found in the pre-built stuff as ament_index not installed for this
+  vcs_control/mim_solvers:
+    type: git
+    url: https://github.com/machines-in-motion/mim_solvers
+    version: v0.1.0

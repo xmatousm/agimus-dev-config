@@ -1,0 +1,51 @@
+ARG REGISTRY=docker.io/library
+FROM ${REGISTRY}/mm_agimus:control
+
+USER root
+
+# prepare a working directory with agimus-control depenendencies
+RUN mkdir -p /ros2_ws/src \
+    && cd /ros2_ws \
+    && git config --global advice.detachedHead false \
+    && git clone --recurse-submodules -b v3.10.3 --depth 1 https://github.com/stack-of-tasks/eigenpy src/vcs_control/eigenpy \
+    && git clone --recurse-submodules -b v3.0.1 --depth 1 https://github.com/coal-library/coal src/vcs_control/coal \
+    && git clone --recurse-submodules -b v3.4.0 --depth 1 https://github.com/stack-of-tasks/pinocchio src/vcs_control/pinocchio \
+    && git clone --recurse-submodules -b v4.3.0 --depth 1 https://github.com/Gepetto/example-robot-data.git src/vcs_control/example-robot-data \
+    && git clone --recurse-submodules -b v3.0.1 --depth 1 https://github.com/loco-3d/crocoddyl src/vcs_control/crocoddyl \
+    && git clone --recurse-submodules -b v0.1.0 --depth 1 https://github.com/machines-in-motion/mim_solvers src/vcs_control/mim_solvers \
+    # Pinocchio has a hardcoded hpp-fcl as dependency while we expect Coal \
+    # Until it is fixed we need to change it manually \
+    && sed -i 's/hpp-fcl/coal/g' src/vcs_control/pinocchio/package.xml
+
+RUN cd /ros2_ws \
+    && source "/opt/ros/$ROS_DISTRO/setup.bash" \
+    && apt-get update \
+    && rosdep update --rosdistro "$ROS_DISTRO" \
+    && rosdep install -y -i --from-paths src --rosdistro "$ROS_DISTRO"
+
+# build the workspace
+RUN cd /ros2_ws \
+    && source "/opt/ros/$ROS_DISTRO/setup.bash" \
+    # Set maximum number of CPU cores used by `make` while building packages \
+    && export MAKEFLAGS="-j 4" \
+    # Build the workspace. Merge install is required to make Python bindings work \
+    && colcon build \
+       --symlink-install \
+       --merge-install \
+       --cmake-args \
+       --no-warn-unused-cli \
+       -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+       -DCMAKE_BUILD_TYPE=Release \
+       -DBUILD_TESTING=OFF \
+       -DBUILD_BENCHMARK=OFF \
+       -DBUILD_BENCHMARKS=OFF \
+       -DBUILD_EXAMPLES=OFF \
+       -DINSTALL_DOCUMENTATION=OFF \
+       -DBUILD_PYTHON_INTERFACE=ON \
+       -DGENERATE_PYTHON_STUBS=OFF \
+       -DCOAL_BACKWARD_COMPATIBILITY_WITH_HPP_FCL=ON \
+       -DCOAL_HAS_QHULL=ON \
+       -DBUILD_WITH_COLLISION_SUPPORT=ON \
+       -DBUILD_WITH_MULTITHREADS=ON
+
+

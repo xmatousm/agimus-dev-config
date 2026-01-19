@@ -1,0 +1,16 @@
+#!/bin/bash
+
+pull_from_cache() {
+    name=$1
+    cache_registry=$2
+    orig_registry=$3
+
+    docker pull $cache_registry/$name
+    docker image tag $cache_registry/$name $orig_registry/$name
+    docker image rm $cache_registry/$name
+}
+
+ORIG=gitlab.laas.fr:4567
+CACHE=localhost:5000
+
+pull_from_cache agimus-project/agimus_dev_container:humble-devel-control $CACHE $ORIG

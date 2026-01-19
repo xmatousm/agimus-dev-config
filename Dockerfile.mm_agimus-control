@@ -1,0 +1,21 @@
+ARG REGISTRY=gitlab.laas.fr:4567
+
+FROM ${REGISTRY}/agimus-project/agimus_dev_container:humble-devel-control
+
+USER root
+
+RUN apt-get update \
+    && apt-get install -y \
+         xauth \
+         xterm \
+         mc \
+         less \
+         openssh-server \
+         ros-${ROS_DISTRO}-rqt-controller-manager \
+         ros-${ROS_DISTRO}-plotjuggler \
+         ros-${ROS_DISTRO}-plotjuggler-ros
+
+USER gepetto
+
+RUN chmod a+rX /home/gepetto
+RUN chmod -R a+rX /home/gepetto/ros2_ws/

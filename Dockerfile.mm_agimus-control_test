@@ -1,0 +1,8 @@
+ARG REGISTRY=docker.io/library
+
+FROM ${REGISTRY}/mm_agimus:control
+
+COPY ws.repos /home/gepetto/ros2_ws/
+COPY ws_get.sh /home/gepetto/ros2_ws/get.sh
+COPY ws_build.sh /home/gepetto/ros2_ws/build.sh
+COPY run /home/gepetto/ros2_ws/run

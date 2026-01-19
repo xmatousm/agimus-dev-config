@@ -1,0 +1,11 @@
+ARG REGISTRY=docker.io/library
+
+FROM ${REGISTRY}/mm_ros:rolling-base
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        python3-vcstool \
+        python3-rosdep \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN rosdep init && rosdep update

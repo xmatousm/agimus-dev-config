@@ -1,0 +1,208 @@
+#!/bin/bash
+# Helper script to run various tasks
+
+# options
+export ROS_LOCALHOST_ONLY=0
+
+cmd=""
+OPTS=()
+#OPTS+=(robot_name:=capek2)
+
+for arg in "${@}"; do
+    case "$arg" in
+        -rviz)
+            OPTS+=("use_rviz:=true")
+            ;;
+
+        -gz-headless)
+            OPTS+=("gz_headless:=true")
+            ;;
+
+
+        -use-aux)
+            OPTS+=("use_aux:=true")
+            ;;
+
+        -on-aux)
+            OPTS+=("on_aux:=true")
+            ;;
+
+        *)
+            if [ -z "$cmd" ]; then
+                cmd="$arg"
+            else
+                echo "Unhandled cmdline argument: $arg"
+                exit 255
+            fi
+            ;;
+    esac
+done
+
+
+#OPTS+=("use_rviz:=true")
+OPTS+=("use_mpc_debugger:=markers")
+
+# init and build utilities
+CMDS1=(get build)
+
+
+case "$cmd" in
+    get)
+        bash ~/ros2_ws/get.sh
+        exit
+        ;;
+
+    build)
+        bash ~/ros2_ws/build.sh
+        exit
+        ;;
+esac
+
+source ~/ros2_ws/install/setup.bash
+
+# some runners
+CMDS2=(kill plot dev devs devc devcs pylon)
+case "$cmd" in
+    kill)
+       killall -9 ruby
+       killall -9 /usr/bin/python3
+       exit
+       ;;
+
+    plot)
+        ros2 run plotjuggler plotjuggler
+        exit
+        ;;
+
+    dev)
+        /usr/local/PyCharm/bin/pycharm
+        exit
+        ;;
+
+    devs)
+        /usr/local/PyCharm/bin/remote-dev-server run
+        exit
+        ;;
+
+    devc)
+        /usr/local/CLion/bin/clion
+        exit
+        ;;
+
+    devcs)
+        /usr/local/CLion/bin/remote-dev-server run
+        exit
+        ;;
+
+    pylon)
+        /opt/pylon/bin/pylonviewer
+        exit
+        ;;
+esac
+
+
+# ros launchers follows
+CMDS3=("0[k[_hw]]" "1[k[_hw]]" "2[k[_hw]]" "3[k[_hw]]" "3l[k[_hw]]" "3o[k[_hw]]" "home[012]k[_hw]")
+
+# gazebo or hw robot
+case "$cmd" in
+    *_hw)
+      cmd=${cmd%%_hw}  # remove the _hw suffix
+      ;;
+
+    *)
+      OPTS+=("use_gazebo:=true")  # no suffix, use gazebo
+esac
+
+case "$cmd" in
+    aux)
+        ros2 launch agimus_demos_common kuka_common_lfc.launch.py "${OPTS[@]}" \
+             "on_aux:=true"
+        ;;
+    0)
+        ros2 launch agimus_demo_00_franka_controller bringup.launch.py "${OPTS[@]}"
+        ;;
+
+    0k)
+        ros2 launch agimus_demo_00_kuka_controller bringup.launch.py "${OPTS[@]}"
+        ;;
+
+    home0k | home1k | home2k | home3k)
+        ros2 launch agimus_demo_00_kuka_controller bringup.launch.py "${OPTS[@]}" preset:=${cmd:0:5}
+        ;;
+
+    rvizk)
+        ros2 launch agimus_demos_common kuka_rviz.launch.py "${OPTS[@]}"
+        ;;
+
+    1)
+        ros2 launch agimus_demo_01_lfc_alone bringup.launch.py "${OPTS[@]}"
+        ;;
+
+    1k)
+        ros2 launch agimus_demo_01_lfc_alone_kuka bringup.launch.py "${OPTS[@]}"
+        ;;
+
+    2)
+        ros2 launch agimus_demo_02_simple_pd_plus bringup.launch.py "${OPTS[@]}"
+        ;;
+
+    2k)
+        ros2 launch agimus_demo_02_simple_pd_plus_kuka bringup.launch.py "${OPTS[@]}"
+        ;;
+
+    3)
+        ros2 launch agimus_demo_03_mpc_dummy_traj bringup.launch.py "${OPTS[@]}"
+        ;;
+
+    3k)
+        ros2 launch agimus_demo_03_mpc_dummy_traj_kuka bringup.launch.py "${OPTS[@]}"
+        ;;
+
+
+    3ok)
+        ros2 launch agimus_demo_03_mpc_dummy_traj_kuka bringup.launch.py "${OPTS[@]}" \
+                    mod_publisher:=true \
+                    trajectory_config_file:=trajectory_weigths_params_line_obstacle.yaml \
+                    obstacles_config_file:=obstacles.xacro \
+                    ocp_definition_file:=ocp_definition_file_obstacle.yaml
+        ;;
+
+    3lk)
+        ros2 launch agimus_demo_03_mpc_dummy_traj_kuka bringup.launch.py "${OPTS[@]}" \
+                    mod_publisher:=true \
+                    trajectory_config_file:=trajectory_weigths_params_line.yaml \
+                    controller_config_file:=agimus_controller_params_line.yaml
+        ;;
+
+    3ck)
+        ros2 launch agimus_demo_03_mpc_dummy_traj_kuka bringup.launch.py "${OPTS[@]}" \
+                    mod_publisher:=true \
+                    trajectory_config_file:=trajectory_weigths_params_calib.yaml \
+                    controller_config_file:=agimus_controller_params_line.yaml
+        ;;
+
+
+    13k)
+        ros2 launch agimus_demo_13_mpc_dummy_goal_kuka bringup.launch.py "${OPTS[@]}"
+        ;;
+
+    14k)
+        ros2 launch agimus_demo_14_cardboard_detect bringup.launch.py "${OPTS[@]}" \
+                camera_embedded:=true
+        ;;
+
+    15k)
+        ros2 launch agimus_demo_15_cardboard bringup.launch.py "${OPTS[@]}" \
+                camera_embedded:=true
+        ;;
+
+
+    *)
+        echo "Unknown command $cmd; known commands:"
+        echo " " ${CMDS1[@]}
+        echo " " ${CMDS2[@]}
+        echo " " ${CMDS3[@]}
+        ;;
+esac
+
