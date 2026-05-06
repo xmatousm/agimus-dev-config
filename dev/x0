@@ -1,9 +1,9 @@
 #!/bin/bash
 
-MACHINE=agimus-rt
-TAG=localhost:5000/mm_agimus:demos
+MACHINE=agimus
+TAG=localhost:5000/mm_agimus:control
 
-if ./dock_remove $MACHINE; then
+if ../rt/dock_remove $MACHINE; then
     docker run \
       --name $MACHINE \
       --hostname $MACHINE \
