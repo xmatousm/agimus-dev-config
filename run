@@ -1,13 +1,18 @@
 #!/bin/bash
 # Helper script to run various tasks
 
-# options
+# options, default and commandline
 export ROS_LOCALHOST_ONLY=0
 
 cmd=""
-OPTS=()
+OPTS=(tool_id:=knife)
+HW=0
+RID=kuka  # robot class (franka, kuka)
+RSUFF="_kuka"
+RNAME="lbr"  # robot name used as ROS namespace
 #OPTS+=(robot_name:=capek2)
 
+CMDS0=(-rviz -gz-headless -use-aux -hw "-f[ranka]" "-k[uka]")
 for arg in "${@}"; do
     case "$arg" in
         -rviz)
@@ -18,7 +23,6 @@ for arg in "${@}"; do
             OPTS+=("gz_headless:=true")
             ;;
 
-
         -use-aux)
             OPTS+=("use_aux:=true")
             ;;
@@ -27,45 +31,73 @@ for arg in "${@}"; do
             OPTS+=("on_aux:=true")
             ;;
 
+        -hw)
+            HW=1
+            ;;
+
+        -debug-lfc)
+            OPTS+=("use_passthrough_state_publisher:=true"
+                   "linear_feedback_controller_params:=${RNAME}_linear_feedback_controller_params_debug.yaml")
+            ;;
+
+        -franka|-f|-panda|-p)
+            RID=franka
+            RSUFF=""
+            ;;
+
+        -kuka|-k)
+            RID=kuka
+            RSUFF=_kuka
+            ;;
+
         *)
             if [ -z "$cmd" ]; then
                 cmd="$arg"
             else
-                echo "Unhandled cmdline argument: $arg"
+                echo "Unhandled multiple cmdline arguments; next is $arg"
                 exit 255
             fi
             ;;
     esac
 done
 
-
-#OPTS+=("use_rviz:=true")
 OPTS+=("use_mpc_debugger:=markers")
+
+# hardware or simulation
+if [ "$HW" == "0" ]; then
+    OPTS+=("use_gazebo:=true")
+fi
+
 
 # init and build utilities
 CMDS1=(get build)
 
-
 case "$cmd" in
     get)
-        bash ~/ros2_ws/get.sh
+        bash ~/ros2_ws/ws_get.sh
         exit
         ;;
 
     build)
-        bash ~/ros2_ws/build.sh
+        bash ~/ros2_ws/ws_build.sh
         exit
         ;;
 esac
 
 source ~/ros2_ws/install/setup.bash
 
-# some runners
+
+# some tools
 CMDS2=(kill plot dev devs devc devcs pylon)
+
 case "$cmd" in
     kill)
        killall -9 ruby
        killall -9 /usr/bin/python3
+       killall -9 /opt/ros/humble/lib/robot_state_publisher/robot_state_publisher
+       killall -9 /opt/ros/humble/lib/tf2_ros/static_transform_publisher
+       killall -9 /opt/ros/humble/lib/ros_gz_sim/create
+
        exit
        ;;
 
@@ -101,108 +133,120 @@ case "$cmd" in
 esac
 
 
-# ros launchers follows
-CMDS3=("0[k[_hw]]" "1[k[_hw]]" "2[k[_hw]]" "3[k[_hw]]" "3l[k[_hw]]" "3o[k[_hw]]" "home[012]k[_hw]")
+# ros launchers for tasks
+CMDS3=(aux rviz "home[012]" zero 0 1 2 3 3a 3o 3l 3c 13 13j 14 15)
 
-# gazebo or hw robot
-case "$cmd" in
-    *_hw)
-      cmd=${cmd%%_hw}  # remove the _hw suffix
-      ;;
-
-    *)
-      OPTS+=("use_gazebo:=true")  # no suffix, use gazebo
-esac
-
+LAUNCH=bringup.launch.py
 case "$cmd" in
     aux)
-        ros2 launch agimus_demos_common kuka_common_lfc.launch.py "${OPTS[@]}" \
-             "on_aux:=true"
+        PKG=agimus_demos_common
+        LAUCH=${RID}_common_lfc.launch.py
+        OPTS+=(on_aux:=true)
         ;;
+
+    rviz)
+        PKG=agimus_demos_common
+        LAUNCH=${RID}_rviz.launch.py
+        ;;
+
+    home0 | home1 | home2 | home3 | zero)
+        PKG=agimus_demo_00_${RID}_controller
+        OPTS+=(preset:=${cmd})
+        ;;
+
     0)
-        ros2 launch agimus_demo_00_franka_controller bringup.launch.py "${OPTS[@]}"
-        ;;
-
-    0k)
-        ros2 launch agimus_demo_00_kuka_controller bringup.launch.py "${OPTS[@]}"
-        ;;
-
-    home0k | home1k | home2k | home3k)
-        ros2 launch agimus_demo_00_kuka_controller bringup.launch.py "${OPTS[@]}" preset:=${cmd:0:5}
-        ;;
-
-    rvizk)
-        ros2 launch agimus_demos_common kuka_rviz.launch.py "${OPTS[@]}"
+        PKG=agimus_demo_00_${RID}_controller
         ;;
 
     1)
-        ros2 launch agimus_demo_01_lfc_alone bringup.launch.py "${OPTS[@]}"
-        ;;
-
-    1k)
-        ros2 launch agimus_demo_01_lfc_alone_kuka bringup.launch.py "${OPTS[@]}"
+        PKG=agimus_demo_01_lfc_alone${RSUFF}
         ;;
 
     2)
-        ros2 launch agimus_demo_02_simple_pd_plus bringup.launch.py "${OPTS[@]}"
-        ;;
-
-    2k)
-        ros2 launch agimus_demo_02_simple_pd_plus_kuka bringup.launch.py "${OPTS[@]}"
+        PKG=agimus_demo_02_simple_pd_plus${RSUFF}
         ;;
 
     3)
-        ros2 launch agimus_demo_03_mpc_dummy_traj bringup.launch.py "${OPTS[@]}"
+        PKG=agimus_demo_03_mpc_dummy_traj${RSUFF}
         ;;
 
-    3k)
-        ros2 launch agimus_demo_03_mpc_dummy_traj_kuka bringup.launch.py "${OPTS[@]}"
+    3f)
+        PKG=agimus_demo_03a_mpc_full_dummy_traj${RSUFF}
+        ;;
+
+    3fa)
+        PKG=agimus_demo_03a_mpc_full_dummy_traj${RSUFF}
+        OPTS+=(trajectory_config_file:=trajectory_weigths_params_adaptive.yaml)
+        ;;
+
+    3o)
+        PKG=agimus_demo_03_mpc_dummy_traj${RSUFF}
+        OPTS+=(mod_publisher:=true \
+               trajectory_config_file:=trajectory_weigths_params_line_obstacle.yaml \
+               obstacles_config_file:=obstacles.xacro \
+               ocp_definition_file:=ocp_definition_file_obstacle.yaml)
+        ;;
+
+    3l)
+        PKG=agimus_demo_03_mpc_dummy_traj${RSUFF}
+        OPTS+=(mod_publisher:=true \
+               trajectory_config_file:=trajectory_weigths_params_line.yaml \
+               controller_config_file:=agimus_controller_params_line.yaml)
+        ;;
+
+    3s)
+        PKG=agimus_demo_03_mpc_dummy_traj${RSUFF}
+        OPTS+=(mod_publisher:=true \
+               trajectory_config_file:=trajectory_weigths_params_saw.yaml \
+               controller_config_file:=agimus_controller_params_line.yaml)
         ;;
 
 
-    3ok)
-        ros2 launch agimus_demo_03_mpc_dummy_traj_kuka bringup.launch.py "${OPTS[@]}" \
-                    mod_publisher:=true \
-                    trajectory_config_file:=trajectory_weigths_params_line_obstacle.yaml \
-                    obstacles_config_file:=obstacles.xacro \
-                    ocp_definition_file:=ocp_definition_file_obstacle.yaml
-        ;;
-
-    3lk)
-        ros2 launch agimus_demo_03_mpc_dummy_traj_kuka bringup.launch.py "${OPTS[@]}" \
-                    mod_publisher:=true \
-                    trajectory_config_file:=trajectory_weigths_params_line.yaml \
-                    controller_config_file:=agimus_controller_params_line.yaml
-        ;;
-
-    3ck)
-        ros2 launch agimus_demo_03_mpc_dummy_traj_kuka bringup.launch.py "${OPTS[@]}" \
-                    mod_publisher:=true \
-                    trajectory_config_file:=trajectory_weigths_params_calib.yaml \
-                    controller_config_file:=agimus_controller_params_line.yaml
+    3c)
+        PKG=agimus_demo_03_mpc_dummy_traj${RSUFF}
+        OPTS+=(mod_publisher:=true \
+               trajectory_config_file:=trajectory_weigths_params_calib.yaml \
+               controller_config_file:=agimus_controller_params_line.yaml)
         ;;
 
 
-    13k)
-        ros2 launch agimus_demo_13_mpc_dummy_goal_kuka bringup.launch.py "${OPTS[@]}"
+    13)
+        PKG=agimus_demo_13_mpc_dummy_goal${RSUFF}
         ;;
 
-    14k)
-        ros2 launch agimus_demo_14_cardboard_detect bringup.launch.py "${OPTS[@]}" \
-                camera_embedded:=true
+    13s)
+        PKG=agimus_demo_13_mpc_dummy_goal${RSUFF}
+        OPTS+=(trajectory_config_file:=trajectory_weigths_params_saw.yaml)
         ;;
 
-    15k)
-        ros2 launch agimus_demo_15_cardboard bringup.launch.py "${OPTS[@]}" \
-                camera_embedded:=true
+    14)
+        PKG=agimus_demo_14_cardboard_detect
+        OPTS+=(camera_embedded:=true)
+        OPTS+=(template:=agimus_cardboard:templates/template_1.yml)
+        if [ "$HW" == "0" ]; then
+            OPTS+=(simulate:=agimus_demo_14_cardboard_detect:config/image_1.png)
+        fi
+        ;;
+
+    15)
+        PKG=agimus_demo_15_cardboard
+        OPTS+=(camera_embedded:=true)
+        OPTS+=(template:=agimus_cardboard:templates/template_1.yml)
         ;;
 
 
     *)
-        echo "Unknown command $cmd; known commands:"
-        echo " " ${CMDS1[@]}
-        echo " " ${CMDS2[@]}
-        echo " " ${CMDS3[@]}
+        echo "Unknown command $cmd; known optons:"
+        echo "  " ${CMDS0[@]}
+        echo "  and commands:"
+        echo "  " ${CMDS1[@]}
+        echo "  " ${CMDS2[@]}
+        echo "  " ${CMDS3[@]}
+        exit
         ;;
 esac
+
+# run the task
+echo Running: ros2 launch "${PKG}" "${LAUNCH}" "${OPTS[@]}"
+ros2 launch "${PKG}" "${LAUNCH}" "${OPTS[@]}"
 

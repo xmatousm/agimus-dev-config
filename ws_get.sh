@@ -15,7 +15,7 @@ vcs import --recursive src < ws.repos || exit 255
 # Dependencies for Franka robots - not needed
 
 # Dependencies for KUKA robots
-vcs import --recursive src  < src/agimus-demos/kuka.repos || exit 255
+vcs import --recursive src  < src/agimus-demos-kuka/kuka.repos || exit 255
 
 # Dependencies for optimal control - prebuilt
 
