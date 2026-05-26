@@ -1,8 +1,8 @@
 #!/bin/bash
 # Build workspace
 
-# Work in the directory of this script, prepare directories
-cd "$(dirname "$0")" || exit 255
+# Work in the current directory
+echo "Building workspace: $(pwd)"
 
 # Source ROS base
 # shellcheck source=/dev/null

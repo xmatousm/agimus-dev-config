@@ -1,8 +1,14 @@
 #!/bin/bash
 # Get all dependencies for Agimus demos
 
-# Work in the directory of this script, prepare directories
-cd "$(dirname "$0")" || exit 255
+# The directory of this script
+SCRIPT="$(readlink -f "$0")"
+BASE="$(dirname "$SCRIPT")"
+
+# Work in the current directory
+echo "Preparing workspace: $(pwd)"
+
+# Init
 mkdir -p src
 cd src || exit 255
 cd ..
@@ -10,7 +16,7 @@ cd ..
 git config --global advice.detachedHead false
 
 # Get base repositories
-vcs import --recursive src < ws.repos || exit 255
+vcs import --recursive src < "$BASE/ws.repos" || exit 255
 
 # Dependencies for Franka robots - not needed
 

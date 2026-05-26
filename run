@@ -1,6 +1,15 @@
 #!/bin/bash
 # Helper script to run various tasks
 
+# The directory of this script
+SCRIPT="$(readlink -f "$0")"
+BASE="$(dirname "$SCRIPT")"
+
+# The workspace
+WS="$HOME/ros2_ws"
+mkdir -p "$WS"
+cd "$WS" || exit 255
+
 # options, default and commandline
 export ROS_LOCALHOST_ONLY=0
 
@@ -74,12 +83,12 @@ CMDS1=(get build)
 
 case "$cmd" in
     get)
-        bash ~/ros2_ws/ws_get.sh
+        bash "$BASE/ws_get.sh"
         exit
         ;;
 
     build)
-        bash ~/ros2_ws/ws_build.sh
+        bash "$BASE/ws_build.sh"
         exit
         ;;
 esac
