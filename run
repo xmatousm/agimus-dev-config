@@ -12,16 +12,24 @@ cd "$WS" || exit 255
 
 # options, default and commandline
 export ROS_LOCALHOST_ONLY=0
-
+OPTS=()
+LAUNCH_OPTS=()
 cmd=""
-OPTS=(tool_id:=knife)
+
+TOOL=knife
+OPTS+=("use_mpc_debugger:=markers")
 HW=0
 RID=kuka  # robot class (franka, kuka)
 RSUFF="_kuka"
 RNAME="lbr"  # robot name used as ROS namespace
-#OPTS+=(robot_name:=capek2)
+WSUFF=""  # workplace setup suffix
 
-CMDS0=(-rviz -gz-headless -use-aux -hw "-f[ranka]" "-k[uka]")
+HELP_OPTIONS='
+    -rviz -gz-headless -use-aux -on-aux -hw -f[ranka] -k[uka]
+    -1 -2  ... selects particular workplace (suffix and tool)
+    -d     ... debug mode of launch files'
+
+# parse options
 for arg in "${@}"; do
     case "$arg" in
         -rviz)
@@ -44,6 +52,16 @@ for arg in "${@}"; do
             HW=1
             ;;
 
+        -1)
+            WSUFF="_1"
+            TOOL=gripper
+            ;;
+
+        -2)
+            WSUFF="_2"
+            TOOL=knife
+            ;;
+
         -debug-lfc)
             OPTS+=("use_passthrough_state_publisher:=true"
                    "linear_feedback_controller_params:=${RNAME}_linear_feedback_controller_params_debug.yaml")
@@ -59,6 +77,10 @@ for arg in "${@}"; do
             RSUFF=_kuka
             ;;
 
+        -d)
+            LAUNCH_OPTS+=("-d")
+            ;;
+
         *)
             if [ -z "$cmd" ]; then
                 cmd="$arg"
@@ -70,13 +92,13 @@ for arg in "${@}"; do
     esac
 done
 
-OPTS+=("use_mpc_debugger:=markers")
+# apply options
+OPTS+=("robot_name:=$RNAME")
+OPTS+=("system_config_path:=agimus_demos_common_kuka:config/kuka/${RNAME}_system_config${WSUFF}.yaml")
 
-# hardware or simulation
 if [ "$HW" == "0" ]; then
     OPTS+=("use_gazebo:=true")
 fi
-
 
 # init and build utilities
 CMDS1=(get build)
@@ -93,8 +115,8 @@ case "$cmd" in
         ;;
 esac
 
+# shellcheck disable=SC1090
 source ~/ros2_ws/install/setup.bash
-
 
 # some tools
 CMDS2=(kill plot dev devs devc devcs pylon)
@@ -106,7 +128,6 @@ case "$cmd" in
        killall -9 /opt/ros/humble/lib/robot_state_publisher/robot_state_publisher
        killall -9 /opt/ros/humble/lib/tf2_ros/static_transform_publisher
        killall -9 /opt/ros/humble/lib/ros_gz_sim/create
-
        exit
        ;;
 
@@ -143,9 +164,10 @@ esac
 
 
 # ros launchers for tasks
-CMDS3=(aux rviz "home[012]" zero 0 1 2 3 3a 3o 3l 3c 13 13j 14 15)
+CMDS3=(aux rviz "home[0123]" zero 0 1 2 3 3f 3fa 3o 3l 3s 3c 13 13s 13g 14 15 16)
 
 LAUNCH=bringup.launch.py
+
 case "$cmd" in
     aux)
         PKG=agimus_demos_common
@@ -154,7 +176,7 @@ case "$cmd" in
         ;;
 
     rviz)
-        PKG=agimus_demos_common
+        PKG=agimus_demos_common_kuka
         LAUNCH=${RID}_rviz.launch.py
         ;;
 
@@ -228,34 +250,76 @@ case "$cmd" in
         OPTS+=(trajectory_config_file:=trajectory_weigths_params_saw.yaml)
         ;;
 
+    13g)
+        PKG=agimus_demo_13_mpc_dummy_goal${RSUFF}
+        OPTS+=(trajectory_config_file:=trajectory_weigths_params_gripper.yaml)
+        OPTS+=(gripper_eth:=192.168.100.31)
+        ;;
+
     14)
-        PKG=agimus_demo_14_cardboard_detect
+        PKG=agimus_demo_14_cardboard_detect${RSUFF}
         OPTS+=(camera_embedded:=true)
-        OPTS+=(template:=agimus_cardboard:templates/template_1.yml)
+
+        #OPTS+=(template:=agimus_cardboard:templates/template_1.yml)
+        OPTS+=(template:=agimus_cardboard:templates/template_B_1.yml)
+
+        OPTS+=(detector:=agimus_demos_common_kuka:config/kuka/detector${WSUFF}.yaml)
+        OPTS+=(calib_cam:=agimus_demos_common_kuka:config/kuka/calib_cam${WSUFF}.yaml)
+        OPTS+=(calib_robot:=agimus_demos_common_kuka:config/kuka/calib_robot${WSUFF}.yaml)
+
+        OPTS+=(mask:=agimus_demos_common_kuka:config/kuka/mask${WSUFF}.png)
+
         if [ "$HW" == "0" ]; then
-            OPTS+=(simulate:=agimus_demo_14_cardboard_detect:config/image_1.png)
+            OPTS+=(simulate:=agimus_demos_common_kuka:config/kuka/image${WSUFF}.png)
         fi
         ;;
 
     15)
-        PKG=agimus_demo_15_cardboard
+        PKG=agimus_demo_15_cardboard${RSUFF}
         OPTS+=(camera_embedded:=true)
-        OPTS+=(template:=agimus_cardboard:templates/template_1.yml)
+
+        #OPTS+=(template:=agimus_cardboard:templates/template_1.yml)
+        OPTS+=(template:=agimus_cardboard:templates/template_B_1.yml)
+
+        OPTS+=(detector:=agimus_demos_common_kuka:config/kuka/detector${WSUFF}.yaml)
+        OPTS+=(calib_cam:=agimus_demos_common_kuka:config/kuka/calib_cam${WSUFF}.yaml)
+        OPTS+=(calib_robot:=agimus_demos_common_kuka:config/kuka/calib_robot${WSUFF}.yaml)
+
+        OPTS+=(mask:=agimus_demos_common_kuka:config/kuka/mask${WSUFF}.png)
+
+        if [ "$HW" == "0" ]; then
+            OPTS+=(simulate:=agimus_demos_common_kuka:config/kuka/image${WSUFF}.png)
+        fi
+       ;;
+
+    16)
+        PKG=agimus_demo_16_cardboard_insert${RSUFF}
+        OPTS+=(camera_embedded:=true)
+
+        OPTS+=(template:=agimus_cardboard:templates/template_B_1.yml)
+
+        OPTS+=(detector:=agimus_demos_common_kuka:config/kuka/detector${WSUFF}.yaml)
+        OPTS+=(calib_cam:=agimus_demos_common_kuka:config/kuka/calib_cam${WSUFF}.yaml)
+        OPTS+=(calib_robot:=agimus_demos_common_kuka:config/kuka/calib_robot${WSUFF}.yaml)
+
+        if [ "$HW" == "0" ]; then
+            OPTS+=(simulate:=agimus_demos_common_kuka:config/kuka/image${WSUFF}.png)
+        fi
         ;;
 
 
     *)
-        echo "Unknown command $cmd; known optons:"
-        echo "  " ${CMDS0[@]}
+        echo "Unknown command $cmd; known optons:$HELP_OPTIONS"
         echo "  and commands:"
-        echo "  " ${CMDS1[@]}
-        echo "  " ${CMDS2[@]}
-        echo "  " ${CMDS3[@]}
+        echo "    " ${CMDS1[@]}
+        echo "    " ${CMDS2[@]}
+        echo "    " ${CMDS3[@]}
         exit
         ;;
 esac
 
-# run the task
-echo Running: ros2 launch "${PKG}" "${LAUNCH}" "${OPTS[@]}"
-ros2 launch "${PKG}" "${LAUNCH}" "${OPTS[@]}"
+OPTS+=(tool_id:=$TOOL)
 
+# run the task
+echo Running: ros2 launch "${LAUNCH_OPTS[@]}" "${PKG}" "${LAUNCH}" "${OPTS[@]}"
+ros2 launch "${LAUNCH_OPTS[@]}" "${PKG}" "${LAUNCH}" "${OPTS[@]}"
