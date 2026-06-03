@@ -170,8 +170,8 @@ LAUNCH=bringup.launch.py
 
 case "$cmd" in
     aux)
-        PKG=agimus_demos_common
-        LAUCH=${RID}_common_lfc.launch.py
+        PKG=agimus_demos_common_kuka
+        LAUNCH=${RID}_common_lfc.launch.py
         OPTS+=(on_aux:=true)
         ;;
 
@@ -187,14 +187,17 @@ case "$cmd" in
 
     0)
         PKG=agimus_demo_00_${RID}_controller
+        TOOL=
         ;;
 
     1)
         PKG=agimus_demo_01_lfc_alone${RSUFF}
+        TOOL=
         ;;
 
     2)
         PKG=agimus_demo_02_simple_pd_plus${RSUFF}
+        TOOL=
         ;;
 
     3)
@@ -311,14 +314,16 @@ case "$cmd" in
     *)
         echo "Unknown command $cmd; known optons:$HELP_OPTIONS"
         echo "  and commands:"
-        echo "    " ${CMDS1[@]}
-        echo "    " ${CMDS2[@]}
-        echo "    " ${CMDS3[@]}
+        echo "    ${CMDS1[*]}"
+        echo "    ${CMDS2[*]}"
+        echo "    ${CMDS3[*]}"
         exit
         ;;
 esac
 
-OPTS+=(tool_id:=$TOOL)
+if [ -n "$TOOL" ]; then
+  OPTS+=("tool_id:=$TOOL")
+fi
 
 # run the task
 echo Running: ros2 launch "${LAUNCH_OPTS[@]}" "${PKG}" "${LAUNCH}" "${OPTS[@]}"
