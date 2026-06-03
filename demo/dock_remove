@@ -1,0 +1,25 @@
+#!/bin/bash
+# check if a container of the given name already exists and stops it
+MACHINE=$1
+
+ex=$(docker container ls -a -q -f name="$MACHINE")
+if [ -n "$ex" ]; then
+    read -p "Container $MACHINE allready exists. Delete and re-create? [y/n]" answer
+
+    # destroy existing container only if required 
+    case $answer in
+         y | Y | yes | Yes | YES)
+
+             echo "Trying to stop the container"
+             docker container stop -t 2 "$MACHINE"
+
+             echo "Trying to remove the container"
+             docker container rm "$MACHINE"
+             exit 0
+             ;;
+         *)
+             exit -1
+    esac
+fi
+
+exit 0

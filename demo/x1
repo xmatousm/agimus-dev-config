@@ -1,0 +1,9 @@
+#!/bin/bash
+
+MACHINE=agimus-demo
+docker start $MACHINE
+docker exec \
+    --interactive \
+    --tty \
+    --user=gepetto \
+    $MACHINE bash

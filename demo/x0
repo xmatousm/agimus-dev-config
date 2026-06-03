@@ -1,0 +1,19 @@
+#!/bin/bash
+
+MACHINE=agimus-demo
+TAG=localhost:5000/mm_agimus:demos
+
+if ./dock_remove $MACHINE; then
+    docker run \
+      --name $MACHINE \
+      --hostname $MACHINE \
+      --ulimit nofile=1024:524288 \
+      --ipc=host \
+      --net=host \
+      --interactive \
+      --tty \
+      --user=gepetto \
+      $TAG bash
+else
+    echo Not run.
+fi
