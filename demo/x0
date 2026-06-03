@@ -13,6 +13,7 @@ if ./dock_remove $MACHINE; then
       --interactive \
       --tty \
       --user=gepetto \
+      --env DISPLAY=:0.0 \
       $TAG bash
 else
     echo Not run.
