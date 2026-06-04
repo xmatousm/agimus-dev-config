@@ -17,9 +17,11 @@ RUN apt-get update \
          ros-${ROS_DISTRO}-plotjuggler-ros \
     && rm -rf /var/lib/apt/lists/*
 
+COPY . /home/gepetto/agimus-dev-config
+RUN chown -R gepetto:gepetto /home/gepetto/agimus-dev-config
+
 USER gepetto
 
-COPY . /home/gepetto/agimus-dev-config
 RUN cd; ls
 RUN ln -s ~/agimus-dev-config/run ~/run
 
