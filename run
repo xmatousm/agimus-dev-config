@@ -23,10 +23,12 @@ RID=kuka  # robot class (franka, kuka)
 RSUFF="_kuka"
 RNAME="lbr"  # robot name used as ROS namespace
 WSUFF=""  # workplace setup suffix
+XOPT=""  # extra option for a task
 
 HELP_OPTIONS='
     -rviz -gz-headless -use-aux -on-aux -hw -f[ranka] -k[uka]
     -1 -2  ... selects particular workplace (suffix and tool)
+    -x=..  ... additional arguments for particular task
     -d     ... debug mode of launch files'
 
 # parse options
@@ -60,6 +62,10 @@ for arg in "${@}"; do
         -2)
             WSUFF="_2"
             TOOL=knife
+            ;;
+
+        -x:*)
+            XOPT=${arg:3}
             ;;
 
         -debug-lfc)
@@ -268,8 +274,9 @@ case "$cmd" in
         PKG=agimus_demo_14_cardboard_detect${RSUFF}
         OPTS+=(camera_embedded:=true)
 
-        #OPTS+=(template:=agimus_cardboard:templates/template_1.yml)
-        OPTS+=(template:=agimus_cardboard:templates/template_B_1.yml)
+        if [ -z "$XOPT" ]; then XOPT=1; fi
+
+        OPTS+=(template:=agimus_cardboard:templates/template_$XOPT.yml)
 
         OPTS+=(detector:=agimus_demos_common_kuka:config/kuka/detector${WSUFF}.yaml)
         OPTS+=(calib_cam:=agimus_demos_common_kuka:config/kuka/calib_cam${WSUFF}.yaml)
@@ -286,8 +293,9 @@ case "$cmd" in
         PKG=agimus_demo_15_cardboard${RSUFF}
         OPTS+=(camera_embedded:=true)
 
-        #OPTS+=(template:=agimus_cardboard:templates/template_1.yml)
-        OPTS+=(template:=agimus_cardboard:templates/template_B_1.yml)
+        if [ -z "$XOPT" ]; then XOPT=1; fi
+
+        OPTS+=(template:=agimus_cardboard:templates/template_$XOPT.yml)
 
         OPTS+=(detector:=agimus_demos_common_kuka:config/kuka/detector${WSUFF}.yaml)
         OPTS+=(calib_cam:=agimus_demos_common_kuka:config/kuka/calib_cam${WSUFF}.yaml)
