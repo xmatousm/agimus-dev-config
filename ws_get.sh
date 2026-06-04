@@ -1,5 +1,5 @@
 #!/bin/bash
-# Get all dependencies for Agimus demos
+# Prepare workspace, get all dependencies and repos for Agimus kuka demos
 
 # The directory of this script
 SCRIPT="$(readlink -f "$0")"

@@ -101,9 +101,14 @@ if [ "$HW" == "0" ]; then
 fi
 
 # init and build utilities
-CMDS1=(get build)
+CMDS1=(deps get build)
 
 case "$cmd" in
+    deps)
+        bash "$BASE/ws_deps.sh"
+        exit
+        ;;
+
     get)
         bash "$BASE/ws_get.sh"
         exit
