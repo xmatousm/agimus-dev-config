@@ -2,14 +2,17 @@ ARG REGISTRY=docker.io/library
 
 FROM ${REGISTRY}/mm_agimus:control
 
-RUN cd; rm -rf agimus-dev-config
+user gepetto
+
+# clone dev-config
 RUN cd; git clone https://github.com/xmatousm/agimus-dev-config.git
-RUN ln -s -f ~/agimus-dev-config/run ~/run
+
+RUN mkdir -p ~/ros2_ws
+RUN ln -s ~/agimus-dev-config/run ~/run
+RUN ln -s ~/agimus-dev-config/run ~/ros2_ws/run
 
 # download/install dependencies
 RUN ~/run get
 
 # buld workspace
 RUN ~/run build
-
-RUN ln -s -f ~/agimus-dev-config/run ~/ros2_ws/run

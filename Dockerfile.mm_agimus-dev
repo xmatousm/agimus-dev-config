@@ -1,0 +1,16 @@
+ARG REGISTRY=docker.io/library
+
+FROM ${REGISTRY}/mm_agimus:control
+
+USER root
+
+# additional dependencies
+RUN apt-get update \
+    && apt-get install -y \
+        libxcb-cursor0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# pylon
+RUN --mount=type=bind,target=/build,source=./ dpkg -i /build/pylon_25.07.0-deb0_amd64.deb
+
+# home and workspace is assumed to be mounted
