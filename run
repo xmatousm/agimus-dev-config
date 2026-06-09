@@ -311,6 +311,7 @@ case "$cmd" in
     16)
         PKG=agimus_demo_16_cardboard_insert${RSUFF}
         OPTS+=(camera_embedded:=true)
+        OPTS+=(gripper_eth:=192.168.100.31)
 
         OPTS+=(template:=agimus_cardboard:templates/template_B_1.yml)
 
@@ -330,6 +331,20 @@ case "$cmd" in
         echo "    ${CMDS1[*]}"
         echo "    ${CMDS2[*]}"
         echo "    ${CMDS3[*]}"
+        echo
+        echo "Typical demo commands:"
+        echo
+        echo "    Aux computer, workplace 1"
+        echo "        run aux -hw -1"
+        echo
+        echo "    Aux computer, workplace 2"
+        echo "        run aux -hw -2"
+        echo
+        echo "    Cardboard picking, workplace 2, template 1"
+        echo "        run 15 -hw -use-aux -2 -x:1"
+        echo
+        echo "    Cardboard insertion, workplace 1, template B_1"
+        echo "        run 16 -hw -use-aux -1 -x:B_1"
         exit
         ;;
 esac
