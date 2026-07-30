@@ -127,7 +127,7 @@ case "$cmd" in
 esac
 
 # shellcheck disable=SC1090
-source ~/ros2_ws/install/setup.bash
+source "$WS"/install/setup.bash
 
 # some tools
 CMDS2=(kill plot dev devs devc devcs pylon)
@@ -313,7 +313,9 @@ case "$cmd" in
         OPTS+=(camera_embedded:=true)
         OPTS+=(gripper_eth:=192.168.100.31)
 
-        OPTS+=(template:=agimus_cardboard:templates/template_B_1.yml)
+        if [ -z "$XOPT" ]; then XOPT=B_1; fi
+
+        OPTS+=(template:=agimus_cardboard:templates/template_$XOPT.yml)
 
         OPTS+=(detector:=agimus_demos_common_kuka:config/kuka/detector${WSUFF}.yaml)
         OPTS+=(calib_cam:=agimus_demos_common_kuka:config/kuka/calib_cam${WSUFF}.yaml)
@@ -339,6 +341,9 @@ case "$cmd" in
         echo
         echo "    Aux computer, workplace 2"
         echo "        run aux -hw -2"
+        echo
+        echo "    Cardboard detection, workplace 2, template 1"
+        echo "        run 14 -hw -2 -x:1"
         echo
         echo "    Cardboard picking, workplace 2, template 1"
         echo "        run 15 -hw -use-aux -2 -x:1"
