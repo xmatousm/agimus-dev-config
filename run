@@ -326,6 +326,21 @@ case "$cmd" in
         fi
         ;;
 
+    16g)
+        PKG=agimus_demo_16_cardboard_insert${RSUFF}
+        OPTS+=(camera_embedded:=true)
+        OPTS+=(gripper_eth:=192.168.100.31)
+
+        OPTS+=(template:=none)
+        OPTS+=(detector:=agimus_demos_common_kuka:config/kuka/detector${WSUFF}.yaml)
+        OPTS+=(calib_cam:=agimus_demos_common_kuka:config/kuka/calib_cam${WSUFF}.yaml)
+        OPTS+=(calib_robot:=agimus_demos_common_kuka:config/kuka/calib_robot${WSUFF}.yaml)
+
+        if [ "$HW" == "0" ]; then
+            OPTS+=(simulate:=agimus_demos_common_kuka:config/kuka/image${WSUFF}.png)
+        fi
+        ;;
+
 
     *)
         echo "Unknown command $cmd; known optons:$HELP_OPTIONS"
@@ -350,6 +365,9 @@ case "$cmd" in
         echo
         echo "    Cardboard insertion, workplace 1, template B_1"
         echo "        run 16 -hw -use-aux -1 -x:B_1"
+        echo
+        echo "    Grabbing parts from holder and throwing them, workplace 1"
+        echo "        run 16g -hw -use-aux -1"
         exit
         ;;
 esac
